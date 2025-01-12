@@ -1,0 +1,3 @@
+../Core/Src/MCP3564R.c:16:5:MCP3564_Init	4
+../Core/Src/MCP3564R.c:57:5:MCP3564_CheckConnection	4
+../Core/Src/MCP3564R.c:91:5:MCP3564_ReadChannel	3
