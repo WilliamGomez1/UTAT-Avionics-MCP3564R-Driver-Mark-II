@@ -18,29 +18,29 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 	MCP3564_hspi = hspi;
 	uint8_t RxData;
 
-	//01 = device address, 0001 = CONFIG0, 10 = incremental write
-	uint8_t writeCommand0 = 0b01000110;
-	//1 = default Vref, 1 = not partial shutdown, 00 = extern. digital clk, 00 = no current applied, 11 = conversion mode
-	uint8_t config0Write = 0b11100011;
-
 	//connects hspi to ADC/check that its connected
 	status = MCP3564_CheckConnection();
 	if(status != HAL_OK){ return 1; }
 
-	/* --- FIRST INSTRUCTION TO CONFIG0 --- */
+	/* --- INSTRUCTION TO CONFIG0 --- */
+
+	//01 = device address, 0001 = CONFIG0, 10 = incremental write
+	uint8_t writeCommand1 = 0b01000110;
+	//1 = default Vref, 1 = not partial shutdown, 11 = internal clk, 00 = no current applied, 11 = conversion mode
+	uint8_t writeCONFIG0 = 0b11100011;
 
 	//set CS low
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
 
 	//send write command
-	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand0, &RxData, 1, 1000);
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand1, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 		return 1;
 	}
 
-	//write to config register to enable conversion mode
-	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &config0Write, &RxData, 1, 1000);
+	//write to config0 register to enable conversion mode
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCONFIG0, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 		return 1;
@@ -49,25 +49,25 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 	//set CS high
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 
-	/* --- SECOND INSTRUCTION TO CONFIG3 --- */
+	/* --- INSTRUCTION TO CONFIG3 --- */
 
-	//01 = device address, 0100 = CONFIG0, 10 = incremental write
-	uint8_t writeCommand3 = 0b01010010;
+	//01 = device address, 0100 = CONFIG3, 10 = incremental write
+	uint8_t writeCommand2 = 0b01010010;
 	//11 = Cont. Conversion mode, 00 = 24 bit ADC data 0000 = default other settings
-	uint8_t config3Write = 0b11000000;
+	uint8_t writeCONFIG3 = 0b11000000;
 
 	//set CS low
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
 
 	//send write command
-	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand3, &RxData, 1, 1000);
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand2, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 		return 1;
 	}
 
 	//write to config register to enable conversion mode
-	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &config3Write, &RxData, 1, 1000);
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCONFIG3, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 		return 1;
@@ -75,6 +75,59 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 
 	//set CS high
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+
+	/* --- INSTRUCTION TO MUX --- */
+
+		//01 = device address, 0110 = MUX, 10 = incremental write
+		uint8_t writeCommand3 = 0b01011010;
+		//0000 = CH0, 1000 = Agnd
+		uint8_t writeMUX = 0b00001000;
+
+		//set CS low
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
+
+		//send write command
+		status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand3, &RxData, 1, 1000);
+		if(status == HAL_ERROR){
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+			return 1;
+		}
+
+		//write to config register to enable conversion mode
+		status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeMUX, &RxData, 1, 1000);
+		if(status == HAL_ERROR){
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+			return 1;
+		}
+
+		//set CS high
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+
+		/* --- INSTRUCTION TO IRQ --- */
+
+		//01 = device address, 0101 = IRQ, 01 = static read
+		uint8_t readCommand1 = 0b01010101;
+		//0000 = CH0, 1000 = A gnd
+		uint8_t IRQdata = 0;
+		//set CS low
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
+
+		//send write command
+		status = HAL_SPI_TransmitReceive(MCP3564_hspi, &readCommand1, &RxData, 1, 1000);
+		if(status == HAL_ERROR){
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+			return 1;
+		}
+
+		//write to config register to enable conversion mode
+		status = HAL_SPI_Receive(MCP3564_hspi, &IRQdata, 1, 1000);
+		if(status == HAL_ERROR){
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+			return 1;
+		}
+
+		//set CS high
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 
 	//return 0 if successfully reached this point
 	return 0;
@@ -121,12 +174,35 @@ int MCP3564_ReadChannel(int32_t *channelReading){
 	HAL_StatusTypeDef status;
 	uint8_t data[3];
 	uint8_t command = 0b01000001;
+	uint8_t RxData = 0; //for debugging
+
+	/* --- FOR DEBUGGING PURPOSES TO READ IRQ REGISTER, CAN BE REMOVED LATER --- */
+
+
+	uint8_t commandIRQ = 0b01010101;
+	uint8_t IRQdata = 0;
+	//CS low
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
+		//returns 0 if no problem
+		//01 = device address, 0101 = IRQ, 01 = static read
+		status = HAL_SPI_TransmitReceive(MCP3564_hspi, &commandIRQ, &RxData, 1, 1000);
+		if(status == HAL_ERROR){
+			return status;
+		}
+		status = HAL_SPI_Receive (MCP3564_hspi, &IRQdata, 1, 1000);
+		if(status == HAL_ERROR){
+				return status;
+		}
+		//CS high
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+
+	/* --- END DEBUG --- */
 
 	//CS low
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
 	//returns 0 if no problem
 	//01 = device address, 0000 = ADCDATA, 01 = static read
-	status = HAL_SPI_Transmit (MCP3564_hspi, &command, 1, 1000);
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &command, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		return status;
 	}
@@ -139,7 +215,9 @@ int MCP3564_ReadChannel(int32_t *channelReading){
 
 	//stitches the 3 bytes of data together
 	//todo: verify that these bits are being stitched together correctly
-	*channelReading = ((int32_t)data[0] << 16 | (int32_t)data[1] << 8 | (int32_t)data[2]);
+	*channelReading |= (uint32_t)data[0] << 16;
+	*channelReading |= (uint32_t)data[1] << 8;
+	*channelReading |= (uint32_t)data[2];
 
 	return status;
 }
