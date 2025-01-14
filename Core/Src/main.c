@@ -108,15 +108,16 @@ int main(void)
     status = MCP3564_Init(&hspi1);
     if(status == HAL_ERROR) {
     	sprintf((char*)tx_buff, "ERROR: MCP3564R failed to initiate\n\r");
+    	HAL_UART_Transmit(&hlpuart1, tx_buff, strlen((char*)tx_buff), 1000);
     }
-    HAL_UART_Transmit(&hlpuart1, tx_buff, strlen((char*)tx_buff), 1000);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	int32_t channelReading = 0;
+	uint32_t channelReading = 0;
 	status = MCP3564_ReadChannel(&channelReading);
 
 	sprintf((char*)tx_buff, "CH0: %d \n\r", channelReading);
