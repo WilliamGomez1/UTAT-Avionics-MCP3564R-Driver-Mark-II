@@ -16,30 +16,56 @@ SPI_HandleTypeDef* MCP3564_hspi;
 int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_t GPIO_PIN_Number*/){
 	HAL_StatusTypeDef status;
 	MCP3564_hspi = hspi;
-	uint8_t RxData1 = 0;
-	uint8_t RxData2 = 0;
+	uint8_t RxData;
 
 	//01 = device address, 0001 = CONFIG0, 10 = incremental write
 	uint8_t writeCommand = 0b01000110;
 	//1 = default Vref, 1 = not partial shutdown, 00 = extern. digital clk, 00 = no current applied, 11 = conversion mode
-	uint8_t configWrite = 0b11100011;
+	uint8_t config0Write = 0b11100011;
 
 	//connects hspi to ADC/check that its connected
 	status = MCP3564_CheckConnection();
 	if(status != HAL_OK){ return 1; }
 
+	/* --- FIRST INSTRUCTION TO CONFIG0 --- */
+
 	//set CS low
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
 
 	//send write command
-	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand, &RxData1, 1, 1000);
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 		return 1;
 	}
 
 	//write to config register to enable conversion mode
-	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &configWrite, &RxData2, 1, 1000);
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &config0Write, &RxData, 1, 1000);
+	if(status == HAL_ERROR){
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+		return 1;
+	}
+
+	//set CS high
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+
+	/* --- SECOND INSTRUCTION TO CONFIG3 --- */
+
+	//11 = Cont. Conversion mode, 00 = 24 bit ADC data 0000 = default other settings
+	uint8_t config3Write = 0b11100011;
+
+	//set CS low
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
+
+	//send write command
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand, &RxData, 1, 1000);
+	if(status == HAL_ERROR){
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+		return 1;
+	}
+
+	//write to config register to enable conversion mode
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &config3Write, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 		return 1;
