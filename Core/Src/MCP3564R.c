@@ -19,7 +19,7 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 	uint8_t RxData;
 
 	//01 = device address, 0001 = CONFIG0, 10 = incremental write
-	uint8_t writeCommand = 0b01000110;
+	uint8_t writeCommand0 = 0b01000110;
 	//1 = default Vref, 1 = not partial shutdown, 00 = extern. digital clk, 00 = no current applied, 11 = conversion mode
 	uint8_t config0Write = 0b11100011;
 
@@ -33,7 +33,7 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
 
 	//send write command
-	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand, &RxData, 1, 1000);
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand0, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 		return 1;
@@ -51,14 +51,16 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 
 	/* --- SECOND INSTRUCTION TO CONFIG3 --- */
 
+	//01 = device address, 0100 = CONFIG0, 10 = incremental write
+	uint8_t writeCommand3 = 0b01010010;
 	//11 = Cont. Conversion mode, 00 = 24 bit ADC data 0000 = default other settings
-	uint8_t config3Write = 0b11100011;
+	uint8_t config3Write = 0b11000000;
 
 	//set CS low
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
 
 	//send write command
-	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand, &RxData, 1, 1000);
+	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &writeCommand3, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 		return 1;
