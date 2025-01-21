@@ -18,7 +18,7 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 	MCP3564_hspi = hspi;
 	uint8_t RxData;
 
-	//connects hspi to ADC/check that its connected
+	//checks that ADC is connected
 	status = MCP3564_CheckConnection();
 	if(status != HAL_OK){ return 1; }
 
@@ -81,7 +81,7 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 		//01 = device address, 0110 = MUX, 10 = incremental write
 		uint8_t writeCommand3 = 0b01011010;
 		//0000 = CH0, 1000 = Agnd
-		uint8_t writeMUX = 0b10011000;
+		uint8_t writeMUX = 0b00001000;
 
 		//set CS low
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
@@ -135,18 +135,13 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 
 // Checks if the MCP3564 is connected to the SPI bus, returns 0 if successful, 1 if failed
 int MCP3564_CheckConnection(){
-	//Checks if connected by verifying the mode, accessed through register 0x1
-	//am I able to read something from this?
-	//TxData: CMD byte → CMD[7:6] = 01 (address of device)
-	//		           → CMD[5:2] = 0x1
-	//		           → CMD[1:0] = 01 (static, for now)
+	//Checks if connected by reading register 0x1 and analyzing the STATUS byte sent over
 	HAL_StatusTypeDef status;
 
 	//01 = device address, 0001 = CONFIG0, 01 = static read
 	uint8_t TxData = 0b01000101;
 	uint8_t RxData = 0; // create space for status byte
 
-	//Pin C4 is our manual chip select line for the MCP3564R
 	//Set ~CS low to begin reading and writing to chip
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
 	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &TxData, &RxData, 1, HAL_MAX_DELAY);
@@ -172,13 +167,14 @@ int MCP3564_ReadChannel(int32_t *channelReading){
 
 	HAL_StatusTypeDef status;
 	uint8_t data[3] = {0,0,0};
+
+	//01 = device address, 0000 = ADCDATA, 01 = static read
 	uint8_t command = 0b01000001;
-	uint8_t RxData = 0; //for debugging
+	uint8_t RxData = 0; //for comparison to validate connection
 
 	//CS low
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
-	//returns 0 if no problem
-	//01 = device address, 0000 = ADCDATA, 01 = static read
+
 	status = HAL_SPI_TransmitReceive(MCP3564_hspi, &command, &RxData, 1, 1000);
 	if(status == HAL_ERROR){
 		return status;
@@ -191,7 +187,6 @@ int MCP3564_ReadChannel(int32_t *channelReading){
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 
 	//stitches the 3 bytes of data together
-	//todo: verify that these bits are being stitched together correctly
 	*channelReading |= (uint32_t)data[0] << 16;
 	*channelReading |= (uint32_t)data[1] << 8;
 	*channelReading |= (uint32_t)data[2];

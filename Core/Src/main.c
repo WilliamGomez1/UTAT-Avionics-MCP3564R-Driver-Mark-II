@@ -76,6 +76,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	  int status;
+	  uint32_t channelReading = 0;
 	  unsigned char tx_buff[100];
   /* USER CODE END 1 */
 
@@ -101,7 +102,9 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+  	// Initially set ~CS pin high
   	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
+  	// Initialize MCP3564R
   	status = MCP3564_Init(&hspi1);
   	if(status == HAL_ERROR) {
   		sprintf((char*)tx_buff, "ERROR: MCP3564R failed to initiate\n\r");
@@ -114,14 +117,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	uint32_t channelReading = 0;
+	  // attempts to read channel data
 	status = MCP3564_ReadChannel(&channelReading);
 
 	sprintf((char*)tx_buff, "CH0: %d \n\r", channelReading);
-
 	HAL_UART_Transmit(&hlpuart1, tx_buff, strlen((char*)tx_buff), 1000);
-	//printf("%ld", channelReading);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
