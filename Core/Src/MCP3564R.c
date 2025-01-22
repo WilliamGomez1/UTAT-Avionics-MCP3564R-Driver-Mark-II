@@ -103,7 +103,7 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 		//set CS high
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 
-		/* --- READING CONGFIG0 --- */
+		/* --- READING IRQ --- */
 
 		//01 = device address, 0101 = IRQ, 01 = static read
 		uint8_t readCommand1 = 0b01010101;
@@ -111,14 +111,14 @@ int MCP3564_Init(SPI_HandleTypeDef* hspi/*, GPIO_TypeDef* GPIOpinLetter, uint16_
 		//set CS low
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_RESET);
 
-		//send write command
+		//send read command
 		status = HAL_SPI_TransmitReceive(MCP3564_hspi, &readCommand1, &RxData, 1, 1000);
 		if(status == HAL_ERROR){
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
 			return 1;
 		}
 
-		//write to config register to enable conversion mode
+		//read IRQ data
 		status = HAL_SPI_Receive(MCP3564_hspi, &READdata, 1, 1000);
 		if(status == HAL_ERROR){
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, GPIO_PIN_SET);
